@@ -23,6 +23,7 @@ class AuthInterceptor extends Interceptor {
     '/auth/login',
     '/auth/register',
     '/auth/google',
+    '/auth/password/reset',
   };
 
   AuthInterceptor({

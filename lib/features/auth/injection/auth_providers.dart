@@ -15,6 +15,9 @@ import 'package:auto_admin_app/features/auth/domain/usecases/change_password.dar
 import 'package:auto_admin_app/features/auth/domain/usecases/confirm_email.dart';
 import 'package:auto_admin_app/features/auth/domain/usecases/get_auth_state.dart';
 import 'package:auto_admin_app/features/auth/domain/usecases/resend_confirmation_code.dart';
+import 'package:auto_admin_app/features/auth/domain/usecases/set_password.dart';
+import 'package:auto_admin_app/features/auth/domain/usecases/request_password_reset.dart';
+import 'package:auto_admin_app/features/auth/domain/usecases/reset_password.dart';
 import 'package:auto_admin_app/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto_admin_app/global/di/global_providers.dart';
 import 'package:dio/dio.dart';
@@ -106,6 +109,17 @@ final Provider<GetAuthState> getAuthStateUseCaseProvider =
 final Provider<ResendConfirmationCode> resendConfirmationCodeUseCaseProvider =
     Provider<ResendConfirmationCode>(
         (ref) => ResendConfirmationCode(ref.watch(authRepositoryProvider)));
+
+final Provider<SetPassword> setPasswordUseCaseProvider = Provider<SetPassword>(
+    (ref) => SetPassword(ref.watch(authRepositoryProvider)));
+
+final Provider<RequestPasswordReset> requestPasswordResetUseCaseProvider =
+    Provider<RequestPasswordReset>(
+        (ref) => RequestPasswordReset(ref.watch(authRepositoryProvider)));
+
+final Provider<ResetPassword> resetPasswordUseCaseProvider =
+    Provider<ResetPassword>(
+        (ref) => ResetPassword(ref.watch(authRepositoryProvider)));
 
 final Provider<ChangePassword> changePasswordUseCaseProvider =
     Provider<ChangePassword>(

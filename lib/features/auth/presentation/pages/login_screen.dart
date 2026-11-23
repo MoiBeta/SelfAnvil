@@ -73,7 +73,18 @@ class LoginScreen extends HookConsumerWidget {
                       validateRequired(value, 'Escribe tu contraseña'),
                   onSubmitted: (_) => submit(),
                 ),
-                const SizedBox(height: Spacing.formFieldSpacing),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: isLoading
+                        ? null
+                        : () => context.pushNamed(
+                              Routes.forgotPassword,
+                              extra: emailController.text.trim(),
+                            ),
+                    child: const Text('¿Olvidaste tu contraseña?'),
+                  ),
+                ),
                 LoadingButton(
                   isLoading: isLoading,
                   onPressed: submit,

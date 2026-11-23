@@ -1,8 +1,10 @@
 import 'package:auto_admin_app/core/constants/routes.dart';
 import 'package:auto_admin_app/features/auth/injection/auth_providers.dart';
 import 'package:auto_admin_app/features/auth/presentation/pages/auth_page.dart';
+import 'package:auto_admin_app/features/auth/presentation/pages/forgot_password_screen.dart';
 import 'package:auto_admin_app/features/auth/presentation/pages/login_screen.dart';
 import 'package:auto_admin_app/features/auth/presentation/pages/register_screen.dart';
+import 'package:auto_admin_app/features/auth/presentation/pages/verify_email_screen.dart';
 import 'package:auto_admin_app/features/tasks/domain/entities/task.dart';
 import 'package:auto_admin_app/features/tasks/presentation/pages/adding_task_screen.dart';
 import 'package:auto_admin_app/features/tasks/presentation/pages/home_page.dart';
@@ -75,6 +77,30 @@ GoRouter router(Ref ref) {
         ),
       ),
       GoRoute(
+        path: Routes.forgotPassword,
+        name: Routes.forgotPassword,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: ForgotPasswordScreen(initialEmail: state.extra as String?),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      ),
+      GoRoute(
+        path: Routes.verifyEmail,
+        name: Routes.verifyEmail,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const VerifyEmailScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      ),
+      GoRoute(
         path: Routes.home,
         name: Routes.home,
         pageBuilder: (context, state) => CustomTransitionPage(
@@ -102,13 +128,14 @@ GoRouter router(Ref ref) {
       ),
     ],
     redirect: (context, state) {
-      final isAuthenticated =
-          ref.read(authNotifierProvider).value?.credentials != null;
+      final credentials = ref.read(authNotifierProvider).value?.credentials;
+      final isAuthenticated = credentials != null;
 
       if (state.uri.toString() == Routes.splash) return null;
 
       final goingToAuth = state.uri.toString() == Routes.login ||
           state.uri.toString() == Routes.register ||
+          state.uri.toString() == Routes.forgotPassword ||
           state.uri.toString() == Routes.auth;
 
       if (!isAuthenticated && !goingToAuth) {
@@ -116,6 +143,11 @@ GoRouter router(Ref ref) {
       }
 
       if (isAuthenticated && goingToAuth) {
+        // Just registered: ask for the code that was sent.
+        if (state.uri.toString() == Routes.register &&
+            credentials.isEmailConfirmed == false) {
+          return Routes.verifyEmail;
+        }
         return Routes.home;
       }
 

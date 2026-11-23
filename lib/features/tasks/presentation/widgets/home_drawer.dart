@@ -1,7 +1,12 @@
+import 'package:auto_admin_app/core/constants/routes.dart';
 import 'package:auto_admin_app/features/auth/injection/auth_providers.dart';
+import 'package:auto_admin_app/features/auth/presentation/widgets/set_password_dialog.dart';
 import 'package:auto_admin_app/features/tasks/presentation/provider/home_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+enum _DrawerAction { home, verifyEmail, addPassword, logout }
 
 class HomeDrawer extends ConsumerWidget {
   const HomeDrawer({super.key});
@@ -34,19 +39,43 @@ class HomeDrawer extends ConsumerWidget {
     await container.read(authNotifierProvider.notifier).logout();
   }
 
+  void _openVerifyEmail(BuildContext context) {
+    final router = GoRouter.of(context);
+    Navigator.of(context).pop();
+    router.pushNamed(Routes.verifyEmail);
+  }
+
+  void _openSetPassword(BuildContext context) {
+    // Closing the drawer disposes this widget: show the dialog from the
+    // navigator, which stays.
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    showDialog<void>(
+      context: navigator.context,
+      builder: (_) => const SetPasswordDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final credentials = ref.watch(authNotifierProvider).value?.credentials;
+
+    final actions = [
+      _DrawerAction.home,
+      if (credentials?.isEmailConfirmed == false) _DrawerAction.verifyEmail,
+      if (credentials?.hasPassword == false) _DrawerAction.addPassword,
+      _DrawerAction.logout,
+    ];
 
     return NavigationDrawer(
       selectedIndex: 0,
-      onDestinationSelected: (index) {
-        if (index == 0) {
-          Navigator.of(context).pop();
-        } else {
-          _logout(context);
-        }
+      onDestinationSelected: (index) => switch (actions[index]) {
+        _DrawerAction.home => Navigator.of(context).pop(),
+        _DrawerAction.verifyEmail => _openVerifyEmail(context),
+        _DrawerAction.addPassword => _openSetPassword(context),
+        _DrawerAction.logout => _logout(context),
       },
       children: [
         DrawerHeader(
@@ -65,6 +94,18 @@ class HomeDrawer extends ConsumerWidget {
           selectedIcon: Icon(Icons.home),
           label: Text('Inicio'),
         ),
+        if (actions.contains(_DrawerAction.verifyEmail))
+          const NavigationDrawerDestination(
+            icon: Icon(Icons.mark_email_unread_outlined),
+            selectedIcon: Icon(Icons.mark_email_unread),
+            label: Text('Verificar correo'),
+          ),
+        if (actions.contains(_DrawerAction.addPassword))
+          const NavigationDrawerDestination(
+            icon: Icon(Icons.password_outlined),
+            selectedIcon: Icon(Icons.password),
+            label: Text('Crear contraseña'),
+          ),
         const NavigationDrawerDestination(
           icon: Icon(Icons.logout_outlined),
           selectedIcon: Icon(Icons.logout),

@@ -13,9 +13,24 @@ abstract class AuthRepository {
 
   Future<AuthCredential?> registerUser(SignUpData signUpData);
 
-  Future<bool> confirmEmail();
+  /// Verifies the email with the code sent to it.
+  Future<AuthCredential> confirmEmail(String code);
 
   Future<void> resendConfirmationCode();
+
+  /// Adds a password to an account that has none (created with Google).
+  Future<AuthCredential> setPassword(String password);
+
+  /// Asks for a code to reset the password of [email]'s account. Succeeds
+  /// whether the account exists or not.
+  Future<void> requestPasswordReset(String email);
+
+  /// Sets a new password with the code sent by email, and signs in.
+  Future<AuthCredential> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  });
 
   Future<void> logout();
 
