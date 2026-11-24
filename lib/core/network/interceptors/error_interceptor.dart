@@ -46,7 +46,13 @@ class ErrorInterceptor extends Interceptor {
     if (statusCode != null) {
       return switch (statusCode) {
         400 => AppError(
-            message: serverMessage ?? 'Datos inválidos.',
+            message: switch (err.requestOptions.path) {
+              '/auth/email/verify' => _emailCodeMessage(serverMessage) ??
+                  'Escribe el código de 6 dígitos que te enviamos.',
+              '/auth/password/reset' => _emailCodeMessage(serverMessage) ??
+                  'Revisa el código y la nueva contraseña.',
+              _ => serverMessage ?? 'Datos inválidos.',
+            },
             type: AppErrorType.validation,
             statusCode: statusCode,
             originalError: err,
@@ -74,10 +80,24 @@ class ErrorInterceptor extends Interceptor {
             originalError: err,
           ),
         409 => AppError(
-            message: err.requestOptions.path == '/auth/google'
-                ? 'Este correo ya está vinculado a otra cuenta de Google.'
-                : serverMessage ?? 'Conflicto con el estado actual.',
+            message: switch (err.requestOptions.path) {
+              '/auth/google' =>
+                'Este correo ya está vinculado a otra cuenta de Google.',
+              '/auth/register' => 'Ya existe una cuenta con este correo.',
+              '/auth/email/resend' => 'Tu correo ya está verificado.',
+              '/auth/password' => 'Tu cuenta ya tiene contraseña.',
+              _ => serverMessage ?? 'Conflicto con el estado actual.',
+            },
             type: AppErrorType.conflict,
+            statusCode: statusCode,
+            originalError: err,
+          ),
+        429 => AppError(
+            message: serverMessage == 'Too many codes today, try again tomorrow'
+                ? 'Ya te enviamos demasiados códigos hoy. Inténtalo mañana.'
+                : 'Demasiados intentos. Espera un momento e inténtalo '
+                    'de nuevo.',
+            type: AppErrorType.validation,
             statusCode: statusCode,
             originalError: err,
           ),
@@ -111,13 +131,27 @@ class ErrorInterceptor extends Interceptor {
     );
   }
 
+  /// The messages the server gives for a rejected verification code.
+  String? _emailCodeMessage(String? serverMessage) => switch (serverMessage) {
+        'Invalid code' => 'El código no es correcto.',
+        'The code has expired, request a new one' =>
+          'El código caducó. Pide uno nuevo.',
+        'Too many attempts, request a new code' =>
+          'Demasiados intentos. Pide un código nuevo.',
+        _ => null,
+      };
+
   /// Tries to extract a human-readable message from the server response body.
   String? _extractServerMessage(dynamic data) {
     if (data == null) return null;
     if (data is Map<String, dynamic>) {
-      return data['message'] as String? ??
-          data['error'] as String? ??
-          data['detail'] as String?;
+      for (final key in const ['message', 'error', 'detail']) {
+        final value = data[key];
+        if (value is String) return value;
+        // Validation errors come as a list of messages.
+        if (value is List && value.isNotEmpty) return value.join('\n');
+      }
+      return null;
     }
     if (data is String && data.isNotEmpty) {
       return data;

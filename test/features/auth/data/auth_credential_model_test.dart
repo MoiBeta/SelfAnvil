@@ -13,4 +13,18 @@ void main() {
         {'id': '1', 'email': 'a@b.com', 'name': 'Ana'});
     expect(model.fullName, 'Ana');
   });
+
+  test('reads whether the email is verified and the account has a password',
+      () {
+    final model = AuthCredentialModel.fromJson({
+      'id': '1',
+      'email': 'a@b.com',
+      'fullName': 'Ana',
+      'isEmailConfirmed': true,
+      'hasPassword': false,
+    });
+    final entity = model.toEntity();
+    expect(entity.isEmailConfirmed, isTrue);
+    expect(entity.hasPassword, isFalse);
+  });
 }

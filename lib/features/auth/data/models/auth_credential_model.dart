@@ -5,12 +5,14 @@ class AuthCredentialModel {
   final String? fullName;
   final String? email;
   final bool? isEmailConfirmed;
+  final bool? hasPassword;
 
   AuthCredentialModel({
     required this.id,
     required this.fullName,
     required this.email,
     this.isEmailConfirmed,
+    this.hasPassword,
   });
 
   AuthCredential toEntity() => AuthCredential(
@@ -18,6 +20,7 @@ class AuthCredentialModel {
         fullName: fullName,
         email: email,
         isEmailConfirmed: isEmailConfirmed,
+        hasPassword: hasPassword,
       );
 
   factory AuthCredentialModel.fromJson(Map<String, dynamic> json) =>
@@ -27,6 +30,7 @@ class AuthCredentialModel {
         fullName: json['fullName'] ?? json['name'],
         email: json['email'],
         isEmailConfirmed: json['isEmailConfirmed'],
+        hasPassword: json['hasPassword'],
       );
 
   Map<String, dynamic> toJson() => {
@@ -34,5 +38,6 @@ class AuthCredentialModel {
         'name': fullName,
         'email': email,
         'isEmailConfirmed': isEmailConfirmed,
+        'hasPassword': hasPassword,
       };
 }

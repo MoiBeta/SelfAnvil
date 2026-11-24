@@ -14,6 +14,9 @@ import 'package:auto_admin_app/features/auth/domain/usecases/inputs/change_passw
 import 'package:auto_admin_app/features/auth/domain/usecases/inputs/login_data.dart';
 import 'package:auto_admin_app/features/auth/domain/usecases/inputs/sign_up_data.dart';
 import 'package:auto_admin_app/features/auth/domain/usecases/resend_confirmation_code.dart';
+import 'package:auto_admin_app/features/auth/domain/usecases/set_password.dart';
+import 'package:auto_admin_app/features/auth/domain/usecases/request_password_reset.dart';
+import 'package:auto_admin_app/features/auth/domain/usecases/reset_password.dart';
 import 'package:auto_admin_app/features/auth/injection/auth_providers.dart';
 import 'package:auto_admin_app/features/notifications/notification_providers.dart';
 import 'package:flutter/foundation.dart';
@@ -28,6 +31,9 @@ class AuthNotifier extends AsyncNotifier<LoginState> {
   late ResendConfirmationCode _resendConfirmationCode;
   late AuthLogout _authLogout;
   late ChangePassword _changePassword;
+  late SetPassword _setPassword;
+  late RequestPasswordReset _requestPasswordReset;
+  late ResetPassword _resetPassword;
 
   StreamSubscription<String>? _fcmTokenRefreshSub;
 
@@ -41,6 +47,9 @@ class AuthNotifier extends AsyncNotifier<LoginState> {
     _resendConfirmationCode = ref.watch(resendConfirmationCodeUseCaseProvider);
     _authLogout = ref.watch(authLogoutUseCaseProvider);
     _changePassword = ref.watch(changePasswordUseCaseProvider);
+    _setPassword = ref.watch(setPasswordUseCaseProvider);
+    _requestPasswordReset = ref.watch(requestPasswordResetUseCaseProvider);
+    _resetPassword = ref.watch(resetPasswordUseCaseProvider);
     ref.onDispose(() => _fcmTokenRefreshSub?.cancel());
 
     AuthCredential? authCredential = await _getAuthState();
@@ -182,25 +191,81 @@ class AuthNotifier extends AsyncNotifier<LoginState> {
     }
   }
 
-  Future<void> confirmEmail() async {
-    state = AsyncData(
-      state.value!.copyWith(
-        isLoading: true,
-      ),
-    );
-    bool confirmed = await _confirmEmail.call();
-    state = AsyncData(
-      state.value!.copyWith(
-        isLoading: false,
-        credentials: state.value?.credentials?.copyWith(
-          isEmailConfirmed: confirmed,
-        ),
-      ),
-    );
+  /// Verifies the email with the code sent to it. Returns whether it worked;
+  /// failures are reported to the user.
+  Future<bool> confirmEmail(String code) async {
+    try {
+      _updateCredentials(await _confirmEmail(code));
+      return true;
+    } catch (e, st) {
+      ref.read(errorHandlerProvider).handle(e, st);
+      return false;
+    }
   }
 
-  Future<void> resendConfirmationCode() async {
-    return _resendConfirmationCode.call();
+  /// Sends a new verification code. Returns whether it was sent.
+  Future<bool> resendConfirmationCode() async {
+    try {
+      await _resendConfirmationCode();
+      return true;
+    } catch (e, st) {
+      ref.read(errorHandlerProvider).handle(e, st);
+      return false;
+    }
+  }
+
+  /// Adds a password to an account created with Google, so it can also sign
+  /// in with email and password. Returns whether it worked.
+  Future<bool> setPassword(String password) async {
+    try {
+      _updateCredentials(await _setPassword(password));
+      return true;
+    } catch (e, st) {
+      ref.read(errorHandlerProvider).handle(e, st);
+      return false;
+    }
+  }
+
+  /// Asks for a code to reset the password. Returns whether the request
+  /// went through (the server does not say if the account exists).
+  Future<bool> requestPasswordReset(String email) async {
+    try {
+      await _requestPasswordReset(email);
+      return true;
+    } catch (e, st) {
+      ref.read(errorHandlerProvider).handle(e, st);
+      return false;
+    }
+  }
+
+  /// Sets a new password with the code sent by email and signs in. Returns
+  /// whether it worked.
+  Future<bool> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) async {
+    try {
+      final credentials = await _resetPassword(
+        email: email,
+        code: code,
+        password: password,
+      );
+      state = AsyncData(state.value!.copyWith(credentials: credentials));
+      _registerFcmToken();
+      return true;
+    } catch (e, st) {
+      ref.read(errorHandlerProvider).handle(e, st);
+      return false;
+    }
+  }
+
+  /// Applies the account returned by the server, unless the session ended
+  /// in the meantime.
+  void _updateCredentials(AuthCredential updated) {
+    final current = state.value;
+    if (current?.credentials == null) return;
+    state = AsyncData(current!.copyWith(credentials: updated));
   }
 
   Future<void> logout() async {

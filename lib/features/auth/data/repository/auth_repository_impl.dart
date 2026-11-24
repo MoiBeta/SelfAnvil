@@ -19,8 +19,9 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
-  Future<bool> confirmEmail() async {
-    return authDataSource.confirmEmail();
+  Future<AuthCredential> confirmEmail(String code) async {
+    final model = await authDataSource.confirmEmail(code);
+    return model.toEntity();
   }
 
   @override
@@ -60,7 +61,32 @@ class AuthRepositoryImpl extends AuthRepository {
   }
 
   @override
-  Future<void> resendConfirmationCode() async {
-    authDataSource.resendConfirmationCode();
+  Future<void> resendConfirmationCode() {
+    return authDataSource.resendConfirmationCode();
+  }
+
+  @override
+  Future<void> requestPasswordReset(String email) {
+    return authDataSource.requestPasswordReset(email);
+  }
+
+  @override
+  Future<AuthCredential> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) async {
+    final model = await authDataSource.resetPassword(
+      email: email,
+      code: code,
+      password: password,
+    );
+    return model.toEntity();
+  }
+
+  @override
+  Future<AuthCredential> setPassword(String password) async {
+    final model = await authDataSource.setPassword(password);
+    return model.toEntity();
   }
 }

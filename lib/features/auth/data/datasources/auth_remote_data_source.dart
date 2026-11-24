@@ -21,9 +21,12 @@ class AuthRemoteDataSource extends AuthDataSource {
   }
 
   @override
-  Future<bool> confirmEmail() {
-    // TODO: implement confirmEmail
-    throw UnimplementedError();
+  Future<AuthCredentialModel> confirmEmail(String code) async {
+    final response = await client.post(
+      '/auth/email/verify',
+      data: {'code': code},
+    );
+    return AuthCredentialModel.fromJson(response.data);
   }
 
   @override
@@ -114,5 +117,39 @@ class AuthRemoteDataSource extends AuthDataSource {
   }
 
   @override
-  Future<void> resendConfirmationCode() async {}
+  Future<void> resendConfirmationCode() async {
+    await client.post('/auth/email/resend');
+  }
+
+  @override
+  Future<void> requestPasswordReset(String email) async {
+    await client.post('/auth/password/forgot', data: {'email': email});
+  }
+
+  @override
+  Future<AuthCredentialModel> resetPassword({
+    required String email,
+    required String code,
+    required String password,
+  }) async {
+    final response = await client.post(
+      '/auth/password/reset',
+      data: {'email': email, 'code': code, 'password': password},
+    );
+    final tokenData = response.data['tokens'];
+    await tokenManager.saveTokens(
+      accessToken: tokenData['accessToken'],
+      refreshToken: tokenData['refreshToken'],
+    );
+    return AuthCredentialModel.fromJson(response.data['user']);
+  }
+
+  @override
+  Future<AuthCredentialModel> setPassword(String password) async {
+    final response = await client.post(
+      '/auth/password',
+      data: {'password': password},
+    );
+    return AuthCredentialModel.fromJson(response.data);
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:auto_admin_app/features/auth/domain/entity/auth_credential.dart';
 import 'package:auto_admin_app/features/auth/domain/repository/auth_repository.dart';
 
 class ConfirmEmail {
@@ -5,7 +6,7 @@ class ConfirmEmail {
 
   ConfirmEmail(this.repository);
 
-  Future<bool> call() {
-    return repository.confirmEmail();
+  Future<AuthCredential> call(String code) {
+    return repository.confirmEmail(code);
   }
 }

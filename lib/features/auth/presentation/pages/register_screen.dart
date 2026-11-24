@@ -26,7 +26,9 @@ class RegisterScreen extends HookConsumerWidget {
     ref.listen(authNotifierProvider, (previous, next) {
       final credentials = next.value?.credentials;
       if (credentials != null && context.mounted) {
-        context.go(Routes.home);
+        context.go(credentials.isEmailConfirmed == false
+            ? Routes.verifyEmail
+            : Routes.home);
       }
     });
 
